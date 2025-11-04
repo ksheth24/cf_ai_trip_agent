@@ -1,0 +1,35 @@
+export class TokenStore {
+  state: DurableObjectState;
+
+  constructor(state: DurableObjectState) {
+    this.state = state;
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const method = request.method.toUpperCase();
+
+    // Save token
+    if (url.pathname === "/save" && method === "POST") {
+      const data = await request.json();
+      const { email, token } = data;
+      if (!email || !token) {
+        return new Response("Missing email or token", { status: 400 });
+      }
+      await this.state.storage.put(email, token);
+      return new Response(`Saved token for ${email}`);
+    }
+
+    // Get token
+    if (url.pathname === "/get" && method === "POST") {
+      const data = await request.json();
+      const { email } = data;
+      const token = await this.state.storage.get(email);
+      return new Response(JSON.stringify({ token }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
+  }
+}

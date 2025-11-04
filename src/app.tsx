@@ -215,6 +215,14 @@ export default function Chat() {
                       <span className="text-[#F48120]">•</span>
                       <span>Local time in different locations</span>
                     </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#F48120]">•</span>
+                      <span>Plan trips and get respective Google Maps links</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-[#F48120]">•</span>
+                      <span>Email trip plans to friends/family</span>
+                    </li>
                   </ul>
                 </div>
               </Card>

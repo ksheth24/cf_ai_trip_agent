@@ -25,6 +25,8 @@ const model = openai("gpt-4o-2024-11-20");
 //   baseURL: env.GATEWAY_BASE_URL,
 // });
 
+
+
 /**
  * Chat Agent implementation that handles real-time AI chat interactions
  */
@@ -111,7 +113,6 @@ If the user asks to schedule a task, use the schedule tool to schedule the task.
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext) {
     const url = new URL(request.url);
-
     if (url.pathname === "/check-open-ai-key") {
       const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
       return Response.json({
