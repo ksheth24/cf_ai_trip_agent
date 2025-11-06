@@ -111,13 +111,15 @@ const cancelScheduledTask = tool({
 const planTrip = tool({
   description: "Plan a detailed trip itinerary and automatically generate Google Maps links for each day.",
   inputSchema: z.object({
-    destination: z.string().describe("The main location for this trip."),
+    destination: z.string().describe("The main location for this trip (can be a city, region, or country). The itinerary should remain specific even for large regions."),
     start_date: z.string().describe("The starting date of the trip."),
     end_date: z.string().describe("The ending date of the trip."),
     interests: z.array(z.string()).optional().describe("User interests or activities to tailor the itinerary."),
     friends: z.array(z.string()).optional().describe("Friends joining the trip.")
   }),
+
   execute: async ({ destination, start_date, end_date, interests, friends }) => {
+    // --- Duration Calculation ---
     const tripLength = (() => {
       const start = new Date(start_date);
       const end = new Date(end_date);
@@ -125,13 +127,21 @@ const planTrip = tool({
       return Math.ceil(days);
     })();
 
-    const fmt = new Intl.DateTimeFormat("en-US", {
-      weekday: "short",
-      month: "long",
-      day: "numeric"   
-    });
+    // --- Regional Expansion Logic ---
+    const regionToCities: Record<string, string[]> = {
+      california: ["Los Angeles", "San Francisco", "San Diego", "Yosemite National Park"],
+      japan: ["Tokyo", "Kyoto", "Osaka", "Hiroshima"],
+      italy: ["Rome", "Florence", "Venice", "Milan"],
+      france: ["Paris", "Nice", "Lyon", "Bordeaux"],
+      spain: ["Barcelona", "Madrid", "Seville", "Valencia"],
+      india: ["Delhi", "Jaipur", "Agra", "Mumbai"],
+      greece: ["Athens", "Santorini", "Mykonos", "Crete"]
+    };
 
-    const itinerary: string[] = [];
+    const normalized = destination.toLowerCase();
+    const subDestinations = regionToCities[normalized] || [destination];
+
+    // --- Example Locations ---
     const exampleRestaurants = [
       "Blue Bottle Coffee",
       "The Grove Café",
@@ -140,6 +150,7 @@ const planTrip = tool({
       "Mountain Bistro",
       "Sunset Terrace"
     ];
+
     const exampleActivities = [
       "city walking tour",
       "museum visit",
@@ -150,31 +161,34 @@ const planTrip = tool({
       "fine dining experience"
     ];
 
+    // --- Generate the itinerary ---
+    const itinerary: string[] = [];
     for (let i = 0; i < tripLength; i++) {
-      const date = new Date(new Date(start_date).getTime() + i * 24 * 60 * 60 * 1000);
-      const dateStr = fmt.format(date);
       const day = i + 1;
+      const city = subDestinations[i % subDestinations.length]; // rotate across sub-locations
+
       itinerary.push(
-        `**Day ${day} — ${dateStr}**  
+        `**Day ${day} — ${city}**  
 - **08:00 AM:** Breakfast at ${exampleRestaurants[(i * 3) % exampleRestaurants.length]}  
-- **09:30 AM:** ${exampleActivities[(i * 5) % exampleActivities.length]}  
+- **10:00 AM:** ${exampleActivities[(i * 4) % exampleActivities.length]} in ${city}  
 - **12:30 PM:** Lunch at ${exampleRestaurants[(i * 3 + 1) % exampleRestaurants.length]}  
-- **02:00 PM:** ${exampleActivities[(i * 2 + 1) % exampleActivities.length]}  
+- **03:00 PM:** ${exampleActivities[(i * 2 + 1) % exampleActivities.length]} nearby  
 - **07:30 PM:** Dinner at ${exampleRestaurants[(i * 3 + 2) % exampleRestaurants.length]}  
 `
       );
     }
 
+    // --- Combine everything into a detailed itinerary ---
     const fullItinerary = `
 Trip to **${destination}**  
-Dates: ${start_date} → ${end_date}  
 ${friends ? `Traveling with: ${friends.join(", ")}` : ""}
 ${interests ? `Traveler interests: ${interests.join(", ")}` : ""}
 
-Here’s your detailed itinerary:S
+Here’s your detailed itinerary:
 ${itinerary.join("\n")}
     `.trim();
 
+    // --- Generate Google Maps links (via your existing tool) ---
     const mapLinks = await tools.generateMapLinks.execute({
       itinerary: fullItinerary,
       destination
@@ -183,6 +197,7 @@ ${itinerary.join("\n")}
     return `${fullItinerary}\n\n${mapLinks}`;
   }
 });
+
 
 const sendEmail = tool({
   description: "Send an email with the most up to date trip itinerary with a subject and body to a list of recipients",
